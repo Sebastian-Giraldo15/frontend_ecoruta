@@ -4,14 +4,14 @@ import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { Button, Input } from '../../components/common';
-import { LoginFormData } from '../../types';
+import type { LoginCredentials } from '../../types/auth.types';
 
 /**
  * Página de inicio de sesión
  */
 export const LoginPage: React.FC = () => {
-  const [formData, setFormData] = useState<LoginFormData>({
-    username: '',
+  const [formData, setFormData] = useState<LoginCredentials>({
+    email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -21,20 +21,22 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirigir si ya está autenticado
+  // Solo redirigir después de un login exitoso, no si ya está autenticado
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && shouldRedirect) {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, shouldRedirect, navigate, location]);
 
   // Limpiar errores al cambiar los campos
   useEffect(() => {
     if (error) {
       clearError();
     }
-  }, [formData.username, formData.password]);
+  }, [formData.email, formData.password]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,7 +52,7 @@ export const LoginPage: React.FC = () => {
     
     try {
       await login(formData);
-      // La redirección se maneja en el useEffect
+      setShouldRedirect(true); // Activar redirección después del login
     } catch (error) {
       // El error se maneja en el contexto
     } finally {
@@ -122,14 +124,14 @@ export const LoginPage: React.FC = () => {
 
             {/* Campo de usuario */}
             <Input
-              label="Nombre de usuario o email"
-              type="text"
-              name="username"
-              value={formData.username}
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleInputChange}
               required
-              autoComplete="username"
-              placeholder="Ingresa tu usuario o email"
+              autoComplete="email"
+              placeholder="Ingresa tu email"
             />
 
             {/* Campo de contraseña */}
@@ -188,7 +190,7 @@ export const LoginPage: React.FC = () => {
               size="lg"
               fullWidth
               isLoading={isSubmitting}
-              disabled={!formData.username || !formData.password}
+              disabled={!formData.email || !formData.password}
             >
               {isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>

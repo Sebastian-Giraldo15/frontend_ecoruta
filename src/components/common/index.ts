@@ -8,3 +8,5 @@ export { default as Card, CardHeader, CardBody, CardFooter } from './Card';
 export { default as Badge } from './Badge';
 export { default as LoadingSpinner, Skeleton, LoadingPage } from './LoadingSpinner';
 export { default as Pagination } from './Pagination';
+export { StatsCard } from './StatsCard';
+export { ProgressBar } from './ProgressBar';

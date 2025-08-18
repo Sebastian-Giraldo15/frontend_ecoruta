@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowRightIcon,
-  CheckCircleIcon,
   StarIcon,
   GlobeAmericasIcon,
   ArrowPathIcon,

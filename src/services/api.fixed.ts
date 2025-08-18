@@ -55,8 +55,8 @@ class ApiService {
 
   // Métodos de autenticación
   async login(username: string, password: string): Promise<AuthResponse> {
-    const response: AxiosResponse<AuthResponse> = await this.api.post('/token/', {
-      email: username, // El backend espera 'email' no 'username'
+    const response: AxiosResponse<AuthResponse> = await this.api.post('/auth/login/', {
+      username,
       password,
     });
     return response.data;
@@ -68,7 +68,7 @@ class ApiService {
   }
 
   async refreshAccessToken(refreshToken: string): Promise<{ access: string }> {
-    const response: AxiosResponse<{ access: string }> = await this.api.post('/token/refresh/', {
+    const response: AxiosResponse<{ access: string }> = await this.api.post('/auth/refresh/', {
       refresh: refreshToken,
     });
     return response.data;
@@ -77,7 +77,7 @@ class ApiService {
   async logout(): Promise<void> {
     const refreshToken = localStorage.getItem('refresh_token'); // Corregido
     if (refreshToken) {
-      await this.api.post('/token/logout/', { refresh: refreshToken });
+      await this.api.post('/auth/logout/', { refresh: refreshToken });
     }
     this.clearTokens();
   }

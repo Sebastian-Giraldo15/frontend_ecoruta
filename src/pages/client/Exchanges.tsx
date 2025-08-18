@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Badge } from '../../components/common';
 import { PointExchange } from '../../types';
@@ -6,7 +6,7 @@ import { useApi } from '../../hooks';
 import { formatDate } from '../../utils';
 
 export const Exchanges: React.FC = () => {
-  const { data: exchanges, loading, fetchData } = useApi<PointExchange[]>('/intercambios/');
+  const { data: exchanges, fetchData } = useApi<PointExchange[]>('/intercambios/');
 
   useEffect(() => {
     fetchData({ ordering: '-fecha_intercambio' });

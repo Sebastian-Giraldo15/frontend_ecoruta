@@ -1,13 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./src/**/*.{html,js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Paleta eco-friendly
+        // Paleta eco-friendly personalizada
         eco: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -67,4 +64,4 @@ export default {
     },
   },
   plugins: [],
-};
+}

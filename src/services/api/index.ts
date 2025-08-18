@@ -1,0 +1,13 @@
+export { default as api } from './config';
+export { default as authService } from './auth.service';
+export { default as usuariosService } from './usuarios.service';
+export { default as localidadesService } from './localidades.service';
+export { default as solicitudesService } from './solicitudes.service';
+export { default as tiposResiduosService } from './tipos-residuos.service';
+export { default as userService } from './user.service';
+export { default as empresaService } from './empresa.service';
+export { default as solicitudService } from './solicitud.service';
+export { default as localidadService } from './localidad.service';
+export { default as tipoResiduoService } from './tipo-residuo.service';
+export { default as canjeService } from './canje.service';
+export { default as notificacionService } from './notificacion.service';

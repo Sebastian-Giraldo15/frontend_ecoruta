@@ -14,12 +14,12 @@ export const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState<RegisterData>({
     email: '',
     password: '',
-    password2: '',
+    confirmarPassword: '',
     nombre: '',
     apellido: '',
     rol: 'usuario' as UserRole,
     telefono: '',
-    localidad: 1,
+    localidad_id: 1,
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -29,14 +29,12 @@ export const RegisterPage: React.FC = () => {
   const { register, isAuthenticated, error, clearError } = useAuth();
   const navigate = useNavigate();
 
-  // Solo redirigir después de un registro exitoso, no si ya está autenticado
-  const [shouldRedirect, setShouldRedirect] = useState(false);
-  
+  // Redirigir si ya está autenticado
   useEffect(() => {
-    if (isAuthenticated && shouldRedirect) {
+    if (isAuthenticated) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, shouldRedirect, navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Limpiar errores cuando cambie el formulario
   useEffect(() => {
@@ -59,7 +57,7 @@ export const RegisterPage: React.FC = () => {
     
     try {
       await register(formData);
-      setShouldRedirect(true); // Activar redirección después del registro
+      // La redirección se maneja en el useEffect
     } catch (error) {
       // El error se maneja en el contexto
     } finally {
@@ -181,8 +179,8 @@ export const RegisterPage: React.FC = () => {
                 <Input
                   label="Confirmar contraseña"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  name="password2"
-                  value={formData.password2}
+                  name="confirmarPassword"
+                  value={formData.confirmarPassword}
                   onChange={handleInputChange}
                   required
                   autoComplete="new-password"
@@ -253,5 +251,4 @@ export const RegisterPage: React.FC = () => {
   );
 };
 
-// Solo usar export default para evitar conflictos
 export default RegisterPage;

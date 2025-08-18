@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GiftIcon, StarIcon } from '@heroicons/react/24/outline';
 import { Card, CardBody, Button, Badge } from '../../components/common';
@@ -9,14 +9,14 @@ import { formatCurrency } from '../../utils';
 
 export const Rewards: React.FC = () => {
   const { user } = useAuth();
-  const { data: rewards, loading, fetchData } = useApi<Reward[]>('/recompensas/');
+  const { data: rewards, fetchData } = useApi<Reward[]>('/recompensas/');
 
   useEffect(() => {
     fetchData({ is_active: true });
   }, []);
 
   const canRedeem = (pointsRequired: number) => {
-    return (user?.puntos || 0) >= pointsRequired;
+    return (user?.puntos_acumulados || 0) >= pointsRequired;
   };
 
   return (
@@ -35,7 +35,7 @@ export const Rewards: React.FC = () => {
           <div className="mt-4 flex items-center space-x-2 p-4 bg-eco-50 rounded-lg">
             <StarIcon className="h-6 w-6 text-eco-500" />
             <span className="text-eco-700 font-medium">
-              Tienes {user?.puntos || 0} puntos disponibles
+              Tienes {user?.puntos_acumulados || 0} puntos disponibles
             </span>
           </div>
         </div>

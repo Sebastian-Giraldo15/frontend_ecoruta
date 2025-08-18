@@ -1,22 +1,61 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { 
+  HomeIcon,
+  UserIcon,
+  UsersIcon,
+  BuildingOfficeIcon,
+  MapPinIcon,
+  ArrowPathIcon,
+  ChartBarIcon,
+  GiftIcon,
+  TruckIcon,
+  ClipboardDocumentListIcon,
+  ArrowsRightLeftIcon,
+  ClockIcon,
+  MapIcon,
+  BellIcon
+} from '@heroicons/react/24/outline';
 import { classNames } from '../../utils';
 import { useAuth } from '../../context/AuthContext';
+import type { SidebarItem } from '../../types/navigation.types';
+import { 
+  adminLinks, 
+  clientLinks, 
+  companyLinks, 
+  commonLinks 
+} from '../../constants/navigation';
 
-// Tipos para elementos de navegación del sidebar
-interface SidebarItem {
-  name: string;
-  href: string;
-  icon: string;
-  badge?: string | number;
-  children?: SidebarItem[];
-}
-
+// Props del componente
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Mapeo de strings de íconos a componentes de Heroicons
+const getIconComponent = (iconName: string) => {
+  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
+    'dashboard': HomeIcon,
+    'home': HomeIcon,
+    'user': UserIcon,
+    'users': UsersIcon,
+    'building': BuildingOfficeIcon,
+    'map-pin': MapPinIcon,
+    'recycle': ArrowPathIcon,
+    'chart-bar': ChartBarIcon,
+    'gift': GiftIcon,
+    'truck': TruckIcon,
+    'clipboard-list': ClipboardDocumentListIcon,
+    'exchange': ArrowsRightLeftIcon,
+    'history': ClockIcon,
+    'map': MapIcon,
+    'bell': BellIcon
+  };
+  
+  const IconComponent = iconMap[iconName] || HomeIcon;
+  return <IconComponent className="h-5 w-5" />;
+};
 
 /**
  * Componente Sidebar para dashboards
@@ -25,52 +64,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  // Navegación según tipo de usuario
+  // Navegación según rol de usuario
   const getSidebarItems = (): SidebarItem[] => {
     if (!user) return [];
 
-    switch (user.tipo_usuario) {
-      case 'cliente':
-        return [
-          { name: 'Dashboard', href: '/client/dashboard', icon: '📊' },
-          { name: 'Solicitar Recolección', href: '/client/request', icon: '📋' },
-          { name: 'Mis Solicitudes', href: '/client/requests', icon: '📝' },
-          { name: 'Recompensas', href: '/client/rewards', icon: '🎁' },
-          { name: 'Intercambios', href: '/client/exchanges', icon: '🔄' },
-          { name: 'Mi Perfil', href: '/client/profile', icon: '👤' },
-        ];
-      case 'empresa_recolectora':
-        return [
-          { name: 'Dashboard', href: '/company/dashboard', icon: '📊' },
-          { name: 'Solicitudes Asignadas', href: '/company/requests', icon: '📋' },
-          { name: 'Planificar Rutas', href: '/company/routes', icon: '🗺️' },
-          { name: 'Historial', href: '/company/history', icon: '📚' },
-          { name: 'Mi Empresa', href: '/company/profile', icon: '🏢' },
-        ];
+    let items: SidebarItem[] = [];
+
+    switch (user.rol) {
       case 'administrador':
-        return [
-          { name: 'Panel General', href: '/admin/dashboard', icon: '⚙️' },
-          { name: 'Gestión de Usuarios', href: '/admin/users', icon: '👥' },
-          { name: 'Gestión de Empresas', href: '/admin/companies', icon: '🏢' },
-          { name: 'Gestión de Recompensas', href: '/admin/rewards', icon: '🎁' },
-          { name: 'Reportes y Estadísticas', href: '/admin/reports', icon: '📈' },
-          { name: 'Configuración', href: '/admin/settings', icon: '⚙️' },
-        ];
+        items = [...adminLinks];
+        break;
+      case 'usuario':
+        items = [...clientLinks];
+        break;
+      case 'empresa_recolectora':
+        items = [...companyLinks];
+        break;
       default:
         return [];
     }
+
+    // Agregar enlaces comunes para todos los usuarios
+    return [...items, ...commonLinks];
   };
 
   const sidebarItems = getSidebarItems();
 
   const isActiveRoute = (href: string) => {
-    return location.pathname === href || 
-           (href !== '/' && location.pathname.startsWith(href));
+    return location.pathname === href;
   };
 
-  const getTitleByUserType = () => {
-    switch (user?.tipo_usuario) {
-      case 'cliente':
+  const getTitleByUserRole = () => {
+    switch (user?.rol) {
+      case 'usuario':
         return 'Panel de Cliente';
       case 'empresa_recolectora':
         return 'Panel de Empresa';
@@ -83,10 +109,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay para móvil */}
+      {/* Overlay para todas las pantallas */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity md:hidden z-40"
+          className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity z-40"
           onClick={onClose}
         />
       )}
@@ -99,8 +125,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className={classNames(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0',
-          'md:flex md:flex-col md:w-64'
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          'flex flex-col w-64'
         )}
       >
         {/* Header del sidebar */}
@@ -128,32 +155,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-eco-400 to-ocean-400 rounded-full flex items-center justify-center">
               <span className="text-white font-medium">
-                {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                {user?.nombre?.charAt(0) || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.first_name || user?.username}
+                {user?.nombre} {user?.apellido}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {getTitleByUserType()}
+                {getTitleByUserRole()}
               </p>
             </div>
           </div>
           
           {/* Puntos para clientes */}
-          {user?.tipo_usuario === 'cliente' && user.puntos !== undefined && (
+          {user?.rol === 'usuario' && user.puntos_acumulados !== undefined && (
             <div className="mt-3 flex items-center justify-center bg-eco-50 rounded-lg p-2">
               <span className="text-eco-600 text-sm font-medium">
-                {user.puntos} puntos EcoRuta
+                {user.puntos_acumulados} puntos EcoRuta
               </span>
               <span className="ml-1 text-eco-500">🌟</span>
             </div>
           )}
         </div>
 
-        {/* Navegación */}
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        {/* Navegación estática sin scroll */}
+        <nav className="flex-1 px-4 py-4 space-y-2">
           {sidebarItems.map((item) => (
             <Link
               key={item.name}
@@ -166,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               )}
             >
-              <span className="mr-3 text-lg">{item.icon}</span>
+              <span className="mr-3">{getIconComponent(item.icon)}</span>
               <span className="flex-1">{item.name}</span>
               {item.badge && (
                 <span

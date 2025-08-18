@@ -1,21 +1,22 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserType } from '../types';
+import type { ProtectedRouteProps, UserRole } from '../types/navigation.types';
 import { LoadingPage } from './common';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredUserType?: UserType;
-}
+const roleRoutes: Record<UserRole, string> = {
+  administrador: '/admin',
+  usuario: '/client',
+  empresa_recolectora: '/company'
+};
 
 /**
  * Componente para proteger rutas que requieren autenticación
- * y opcionalmente un tipo específico de usuario
+ * y opcionalmente un rol específico de usuario
  */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  requiredUserType,
+  requiredRole,
 }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
@@ -30,23 +31,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Verificar tipo de usuario si es requerido
-  if (requiredUserType && user?.tipo_usuario !== requiredUserType) {
-    // Redirigir al dashboard correcto según el tipo de usuario
-    let redirectPath = '/';
-    if (user) {
-      switch (user.tipo_usuario) {
-        case 'cliente':
-          redirectPath = '/client/dashboard';
-          break;
-        case 'empresa_recolectora':
-          redirectPath = '/company/dashboard';
-          break;
-        case 'administrador':
-          redirectPath = '/admin/dashboard';
-          break;
-      }
-    }
+  // Verificar rol de usuario si es requerido
+  if (requiredRole && user?.rol !== requiredRole) {
+    const redirectPath = user?.rol ? roleRoutes[user.rol] : '/client';
     return <Navigate to={redirectPath} replace />;
   }
 

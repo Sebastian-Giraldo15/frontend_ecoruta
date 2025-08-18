@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, AuthResponse, LoginFormData, RegisterFormData } from '../types';
-import { apiService } from '../services/api';
+import type { 
+  User, 
+  AuthContextType, 
+  LoginCredentials,
+  RegisterData
+} from '../types/auth.types';
+import authService from '../services/api/auth.service';
+import { isTokenExpired } from '../utils/jwt';
 
-// Tipos para el contexto de autenticación
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -16,15 +21,7 @@ type AuthAction =
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'CLEAR_ERROR' }
-  | { type: 'UPDATE_USER'; payload: User };
-
-interface AuthContextType extends AuthState {
-  login: (credentials: LoginFormData) => Promise<void>;
-  register: (userData: RegisterFormData) => Promise<void>;
-  logout: () => Promise<void>;
-  clearError: () => void;
-  updateUser: (user: User) => void;
-}
+  | { type: 'UPDATE_USER'; payload: Partial<User> };
 
 // Estado inicial
 const initialState: AuthState = {
@@ -75,7 +72,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
     case 'UPDATE_USER':
       return {
         ...state,
-        user: action.payload,
+        user: state.user ? { ...state.user, ...action.payload } : null,
       };
     default:
       return state;
@@ -96,19 +93,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Función para verificar si hay un token válido al cargar la aplicación
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('access_token');
+      
       if (token) {
+        // Verificar si el token ha expirado antes de hacer la llamada
+        if (isTokenExpired(token)) {
+          console.log('Token expirado, limpiando localStorage');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          dispatch({ type: 'LOGOUT' });
+          return;
+        }
+
         try {
           // Verificar el token obteniendo la información del usuario actual
-          const user = await apiService.get<User>('/auth/me/');
-          dispatch({ type: 'AUTH_SUCCESS', payload: user });
+          const response = await authService.getCurrentUser();
+          dispatch({ type: 'AUTH_SUCCESS', payload: response });
         } catch (error) {
+          console.log('Error al validar token:', error);
           // Si el token no es válido, limpiar almacenamiento
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
           dispatch({ type: 'LOGOUT' });
         }
       } else {
+        // No hay token, establecer estado inicial
         dispatch({ type: 'LOGOUT' });
       }
     };
@@ -116,79 +125,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // Función de login
-  const login = async (credentials: LoginFormData): Promise<void> => {
+  const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
       dispatch({ type: 'AUTH_START' });
+      const tokenResponse = await authService.login(credentials);
       
-      const response: AuthResponse = await apiService.login(
-        credentials.username,
-        credentials.password
-      );
-
       // Guardar tokens en localStorage
-      localStorage.setItem('accessToken', response.access);
-      localStorage.setItem('refreshToken', response.refresh);
-
-      dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
+      localStorage.setItem('access_token', tokenResponse.access);
+      localStorage.setItem('refresh_token', tokenResponse.refresh);
+      
+      // Obtener los datos del usuario con el nuevo token
+      const userResponse = await authService.getCurrentUser();
+      
+      dispatch({ type: 'AUTH_SUCCESS', payload: userResponse });
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.message || 
-                          'Error de autenticación';
+                          'Error al iniciar sesión. Por favor, verifica tus credenciales.';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
   };
 
-  // Función de registro
-  const register = async (userData: RegisterFormData): Promise<void> => {
+  const register = async (userData: RegisterData): Promise<void> => {
     try {
       dispatch({ type: 'AUTH_START' });
-
-      // Validar que las contraseñas coincidan
-      if (userData.password !== userData.confirmPassword) {
+      
+      if (userData.password !== userData.password2) {
         throw new Error('Las contraseñas no coinciden');
       }
 
-      // Remover confirmPassword antes de enviar al servidor
-      const { confirmPassword, ...dataToSend } = userData;
-      
-      const user: User = await apiService.register(dataToSend);
+      // Enviar todos los datos incluyendo password2 a Django
+      await authService.register(userData);
       
       // Después del registro exitoso, hacer login automático
       await login({
-        username: userData.username,
-        password: userData.password,
+        email: userData.email,
+        password: userData.password
       });
+      
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.message || 
                           error.message ||
-                          'Error en el registro';
+                          'Error al registrar usuario. Por favor, intenta nuevamente.';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
   };
 
-  // Función de logout
   const logout = async (): Promise<void> => {
     try {
-      await apiService.logout();
+      await authService.logout();
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
     } catch (error) {
-      console.error('Error durante el logout:', error);
+      console.error('Error al cerrar sesión:', error);
     } finally {
       dispatch({ type: 'LOGOUT' });
     }
   };
 
-  // Función para limpiar errores
   const clearError = (): void => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
-  // Función para actualizar usuario
-  const updateUser = (user: User): void => {
-    dispatch({ type: 'UPDATE_USER', payload: user });
+  const updateUser = async (userData: Partial<User>): Promise<void> => {
+    try {
+      if (!state.user?.id) throw new Error('No hay un usuario activo');
+      const response = await authService.updateUser(state.user.id, userData);
+      dispatch({ type: 'UPDATE_USER', payload: response });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Error al actualizar usuario.';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
   };
 
   const value: AuthContextType = {

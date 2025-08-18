@@ -32,8 +32,8 @@ export const Navbar: React.FC = () => {
       ];
     }
 
-    switch (user.tipo_usuario) {
-      case 'cliente':
+    switch (user.rol) {
+      case 'usuario':
         return [
           { name: 'Dashboard', href: '/client/dashboard', icon: '📊' },
           { name: 'Solicitar Recolección', href: '/client/request', icon: '📋' },
@@ -117,10 +117,10 @@ export const Navbar: React.FC = () => {
             {isAuthenticated && user ? (
               <>
                 {/* Puntos del usuario (solo para clientes) */}
-                {user.tipo_usuario === 'cliente' && user.puntos !== undefined && (
+                {user.rol === 'usuario' && user.puntos_acumulados !== undefined && (
                   <div className="flex items-center space-x-1 px-3 py-1 bg-eco-50 rounded-full">
                     <span className="text-eco-600 text-sm font-medium">
-                      {user.puntos} puntos
+                      {user.puntos_acumulados} puntos
                     </span>
                     <span className="text-eco-500">🌟</span>
                   </div>
@@ -134,7 +134,7 @@ export const Navbar: React.FC = () => {
                   >
                     <UserCircleIcon className="h-8 w-8" />
                     <span className="text-gray-700 font-medium">
-                      {user.first_name || user.username}
+                      {user.nombre} {user.apellido}
                     </span>
                   </button>
 
@@ -245,7 +245,7 @@ export const Navbar: React.FC = () => {
                   <UserCircleIcon className="h-10 w-10 text-gray-400" />
                   <div className="ml-3">
                     <div className="text-base font-medium text-gray-800">
-                      {user.first_name || user.username}
+                      {user.nombre} {user.apellido}
                     </div>
                     <div className="text-sm font-medium text-gray-500">
                       {user.email}

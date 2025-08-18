@@ -1,6 +1,9 @@
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+// Exportar utilidades JWT
+export * from './jwt';
+
 /**
  * Utilidades para formatear fechas
  */
