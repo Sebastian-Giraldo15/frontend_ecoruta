@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales personalizados */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+  }
+  
+  /* Estilos para scrollbar personalizado */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+@layer components {
+  /* Botones base */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+  }
+  
+  .btn-primary {
+    @apply btn bg-eco-600 text-white hover:bg-eco-700 focus:ring-eco-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-eco-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  /* Inputs */
+  .input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-eco-500 focus:border-eco-500 sm:text-sm;
+  }
+  
+  .input-error {
+    @apply border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500;
+  }
+  
+  /* Cards */
+  .card {
+    @apply bg-white overflow-hidden shadow rounded-lg;
+  }
+  
+  .card-body {
+    @apply px-4 py-5 sm:p-6;
+  }
+  
+  .card-header {
+    @apply px-4 py-5 sm:px-6 border-b border-gray-200;
+  }
+  
+  .card-footer {
+    @apply px-4 py-4 sm:px-6 border-t border-gray-200;
+  }
+  
+  /* Estados de carga */
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  
+  /* Badges/Pills */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  /* Navegación */
+  .nav-link {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200;
+  }
+  
+  .nav-link-active {
+    @apply bg-eco-100 text-eco-900;
+  }
+  
+  .nav-link-inactive {
+    @apply text-gray-600 hover:bg-gray-50 hover:text-gray-900;
+  }
+  
+  /* Tablas */
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table-header {
+    @apply bg-gray-50;
+  }
+  
+  .table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  }
+  
+  .table-body {
+    @apply bg-white divide-y divide-gray-200;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+  }
+  
+  /* Modales */
+  .modal-overlay {
+    @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity;
+  }
+  
+  .modal-container {
+    @apply fixed inset-0 z-10 overflow-y-auto;
+  }
+  
+  .modal-content {
+    @apply flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0;
+  }
+  
+  .modal-panel {
+    @apply relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg;
+  }
+  
+  /* Formularios */
+  .form-group {
+    @apply mb-4;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .form-error {
+    @apply mt-1 text-sm text-red-600;
+  }
+  
+  .form-help {
+    @apply mt-1 text-sm text-gray-500;
+  }
+  
+  /* Estados de notificaciones */
+  .notification {
+    @apply max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden;
+  }
+  
+  .notification-success {
+    @apply border-l-4 border-green-400 bg-green-50;
+  }
+  
+  .notification-error {
+    @apply border-l-4 border-red-400 bg-red-50;
+  }
+  
+  .notification-warning {
+    @apply border-l-4 border-yellow-400 bg-yellow-50;
+  }
+  
+  .notification-info {
+    @apply border-l-4 border-blue-400 bg-blue-50;
+  }
+}
+
+@layer utilities {
+  /* Utilidades de animación */
+  .fade-in {
+    animation: fade-in 0.5s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  .bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+  }
+  
+  /* Utilidades de espaciado */
+  .section-spacing {
+    @apply py-12 sm:py-16 lg:py-20;
+  }
+  
+  .container-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Utilidades de texto */
+  .text-gradient {
+    @apply bg-gradient-to-r from-eco-600 to-ocean-600 bg-clip-text text-transparent;
+  }
+  
+  /* Utilidades de sombra */
+  .shadow-eco {
+    box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.2);
+  }
+  
+  .shadow-eco-lg {
+    box-shadow: 0 10px 25px -3px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.05);
+  }
+  
+  /* Estados hover para elementos interactivos */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+  
+  .hover-glow {
+    @apply transition-shadow duration-200 hover:shadow-eco-lg;
+  }
+}
