@@ -397,7 +397,7 @@ export const RequestCollection: React.FC = () => {
                 <Button
                   type="submit"
                   variant="primary"
-                  isLoading={loading}
+                  loading={loading}
                   className="flex-1"
                 >
                   {loading ? 'Creando...' : 'Crear Solicitud'}

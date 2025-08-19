@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Badge, Button, Pagination, LoadingSpinner, Modal } from '../../components/common';
-import { CollectionRequest } from '../../types';
-import { useApi, usePagination } from '../../hooks';
+import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils';
 import { 
   MapPinIcon, 
@@ -14,15 +13,77 @@ import {
   XCircleIcon
 } from '@heroicons/react/24/outline';
 
+// Tipos basados en la estructura real de la API
+interface SolicitudAPI {
+  id: number;
+  fecha_solicitud: string;
+  fecha_programada?: string;
+  fecha_recoleccion?: string;
+  estado: string;
+  es_programada: boolean;
+  frecuencia?: string;
+  peso_kg?: number;
+  observaciones?: string;
+  cumple_requisitos?: boolean;
+  puntos_otorgados: number;
+  numero_turno?: string;
+  notificacion_enviada: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+  usuario: number;
+  tipo_residuo: number;
+  empresa?: number;
+  cantidad?: number;
+  direccion?: string;
+  telefono?: string;
+}
+
+interface TipoResiduoAPI {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  subcategoria: string;
+  activo: boolean;
+  fecha_creacion: string;
+}
+
+interface EmpresaAPI {
+  id: number;
+  nombre: string;
+  telefono: string;
+  email: string;
+  direccion: string;
+  activa: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
 export const MyRequests: React.FC = () => {
-  const { data: requestsResponse, loading, error, fetchData } = useApi<{count: number, results: CollectionRequest[]}>('/solicitudes/');
-  const pagination = usePagination(1, 10);
-  const [selectedRequest, setSelectedRequest] = useState<CollectionRequest | null>(null);
+  const { user } = useAuth();
+  const [solicitudes, setSolicitudes] = useState<SolicitudAPI[]>([]);
+  const [tiposResiduos, setTiposResiduos] = useState<TipoResiduoAPI[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaAPI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<SolicitudAPI | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
-  const requests = requestsResponse?.results || [];
+  // Funciones auxiliares para obtener nombres por ID
+  const getTipoResiduoNombre = (id: number): string => {
+    const tipo = tiposResiduos.find(t => t.id === id);
+    return tipo ? tipo.nombre : `Tipo ${id}`;
+  };
 
-  const handleViewDetails = (request: CollectionRequest) => {
+  const getEmpresaNombre = (id: number): string => {
+    const empresa = empresas.find(e => e.id === id);
+    return empresa ? empresa.nombre : `Empresa ${id}`;
+  };
+
+  const handleViewDetails = (request: SolicitudAPI) => {
     setSelectedRequest(request);
     setIsModalOpen(true);
   };
@@ -30,6 +91,56 @@ export const MyRequests: React.FC = () => {
   const closeModal = () => {
     setSelectedRequest(null);
     setIsModalOpen(false);
+  };
+
+  // Función para cargar datos de la API
+  const loadData = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Token de acceso no encontrado');
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // Cargar solicitudes, tipos de residuos y empresas en paralelo
+      const [solicitudesResponse, tiposResponse, empresasResponse] = await Promise.all([
+        fetch(`/api/solicitudes/?page=${page}&page_size=${pageSize}`, { headers }),
+        fetch('/api/tipos-residuos/', { headers }),
+        fetch('/api/empresas/', { headers })
+      ]);
+
+      if (!solicitudesResponse.ok) {
+        throw new Error(`Error al cargar solicitudes: ${solicitudesResponse.status}`);
+      }
+      if (!tiposResponse.ok) {
+        throw new Error(`Error al cargar tipos de residuos: ${tiposResponse.status}`);
+      }
+      if (!empresasResponse.ok) {
+        throw new Error(`Error al cargar empresas: ${empresasResponse.status}`);
+      }
+
+      const solicitudesData = await solicitudesResponse.json();
+      const tiposData = await tiposResponse.json();
+      const empresasData = await empresasResponse.json();
+
+      setSolicitudes(solicitudesData.results || []);
+      setTiposResiduos(tiposData.results || []);
+      setEmpresas(empresasData.results || []);
+      setTotalPages(Math.ceil((solicitudesData.count || 0) / pageSize));
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar datos');
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusIcon = (estado: string) => {
@@ -61,25 +172,12 @@ export const MyRequests: React.FC = () => {
   };
 
   useEffect(() => {
-    const loadRequests = async () => {
-      try {
-        console.log('Loading requests...');
-        console.log('Access token:', localStorage.getItem('accessToken')?.substring(0, 20) + '...');
-        console.log('Refresh token:', localStorage.getItem('refreshToken')?.substring(0, 20) + '...');
-        
-        await fetchData({ 
-          page: pagination.currentPage, 
-          page_size: pagination.pageSize 
-        });
-        console.log('Requests loaded successfully');
-      } catch (err) {
-        console.error('Error loading requests:', err);
-        // No hacer nada aquí, el error ya se maneja en useApi
-      }
-    };
-    
-    loadRequests();
-  }, [pagination.currentPage]);
+    loadData(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div>
@@ -103,7 +201,7 @@ export const MyRequests: React.FC = () => {
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <p className="text-red-800">Error al cargar solicitudes: {error}</p>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => loadData(currentPage)} 
               className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
             >
               Reintentar
@@ -111,7 +209,7 @@ export const MyRequests: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {requests?.map((request) => (
+            {solicitudes?.map((request) => (
               <motion.div
                 key={request.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -124,23 +222,27 @@ export const MyRequests: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="font-semibold text-gray-900">
-                            {request.tipo_residuo}
+                            {getTipoResiduoNombre(request.tipo_residuo)}
                           </h3>
                           <Badge variant="status" status={request.estado}>
                             {request.estado}
                           </Badge>
                         </div>
-                        <p className="text-gray-600 mb-2">{request.descripcion}</p>
+                        <p className="text-gray-600 mb-2">{request.observaciones || 'Sin observaciones'}</p>
                         <div className="text-sm text-gray-500">
-                          <p>Peso: {request.peso_estimado} kg</p>
+                          {request.cantidad && <p>Cantidad: {request.cantidad} kg</p>}
+                          {request.peso_kg && <p>Peso real: {request.peso_kg} kg</p>}
                           <p>Solicitado: {formatDate(request.fecha_solicitud)}</p>
-                          {request.fecha_completada && (
-                            <p>Completado: {formatDate(request.fecha_completada)}</p>
+                          {request.fecha_recoleccion && (
+                            <p>Recolectado: {formatDate(request.fecha_recoleccion)}</p>
+                          )}
+                          {request.es_programada && request.frecuencia && (
+                            <p>Frecuencia: {request.frecuencia}</p>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        {request.puntos_otorgados && (
+                        {request.puntos_otorgados > 0 && (
                           <p className="text-eco-600 font-semibold">
                             +{request.puntos_otorgados} puntos
                           </p>
@@ -160,12 +262,25 @@ export const MyRequests: React.FC = () => {
               </motion.div>
             ))}
             
-            {requests && requests.length > 0 && requestsResponse && (
+            {solicitudes && solicitudes.length > 0 && totalPages > 1 && (
               <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={Math.ceil(requestsResponse.count / pagination.pageSize)}
-                onPageChange={pagination.goToPage}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
               />
+            )}
+
+            {solicitudes && solicitudes.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No tienes solicitudes de recolección aún.</p>
+                <Button 
+                  variant="primary" 
+                  className="mt-4"
+                  onClick={() => window.location.href = '/client/request-collection'}
+                >
+                  Crear Primera Solicitud
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -188,7 +303,7 @@ export const MyRequests: React.FC = () => {
                   </span>
                 </div>
               </div>
-              {selectedRequest.puntos_otorgados && (
+              {selectedRequest.puntos_otorgados > 0 && (
                 <div className="text-right">
                   <p className="text-eco-600 font-semibold text-lg">
                     +{selectedRequest.puntos_otorgados} puntos
@@ -207,50 +322,50 @@ export const MyRequests: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500">Tipo de Residuo</p>
-                  <p className="font-medium text-gray-900">{selectedRequest.tipo_residuo}</p>
+                  <p className="font-medium text-gray-900">{getTipoResiduoNombre(selectedRequest.tipo_residuo)}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Peso Estimado</p>
-                  <p className="font-medium text-gray-900">{selectedRequest.peso_estimado} kg</p>
-                </div>
+                {selectedRequest.cantidad && (
+                  <div>
+                    <p className="text-sm text-gray-500">Cantidad Solicitada</p>
+                    <p className="font-medium text-gray-900">{selectedRequest.cantidad} kg</p>
+                  </div>
+                )}
                 {selectedRequest.peso_kg && (
                   <div>
                     <p className="text-sm text-gray-500">Peso Real</p>
                     <p className="font-medium text-gray-900">{selectedRequest.peso_kg} kg</p>
                   </div>
                 )}
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Descripción</p>
-                  <p className="font-medium text-gray-900">{selectedRequest.descripcion}</p>
-                </div>
+                {selectedRequest.observaciones && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">Observaciones</p>
+                    <p className="font-medium text-gray-900">{selectedRequest.observaciones}</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Información de Ubicación */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                <MapPinIcon className="h-5 w-5 mr-2" />
-                Ubicación
-              </h4>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-500">Dirección</p>
-                  <p className="font-medium text-gray-900">{selectedRequest.direccion}</p>
+            {selectedRequest.direccion && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                  <MapPinIcon className="h-5 w-5 mr-2" />
+                  Ubicación
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm text-gray-500">Dirección</p>
+                    <p className="font-medium text-gray-900">{selectedRequest.direccion}</p>
+                  </div>
+                  {selectedRequest.telefono && (
+                    <div>
+                      <p className="text-sm text-gray-500">Teléfono de Contacto</p>
+                      <p className="font-medium text-gray-900">{selectedRequest.telefono}</p>
+                    </div>
+                  )}
                 </div>
-                {selectedRequest.ciudad && (
-                  <div>
-                    <p className="text-sm text-gray-500">Ciudad</p>
-                    <p className="font-medium text-gray-900">{selectedRequest.ciudad}</p>
-                  </div>
-                )}
-                {selectedRequest.codigo_postal && (
-                  <div>
-                    <p className="text-sm text-gray-500">Código Postal</p>
-                    <p className="font-medium text-gray-900">{selectedRequest.codigo_postal}</p>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
 
             {/* Información de Fechas */}
             <div className="bg-gray-50 rounded-lg p-4">
@@ -281,11 +396,19 @@ export const MyRequests: React.FC = () => {
                     </span>
                   </div>
                 )}
-                {selectedRequest.fecha_completada && (
+                {selectedRequest.es_programada && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Completada el</span>
+                    <span className="text-sm text-gray-500">Tipo de solicitud</span>
                     <span className="font-medium text-gray-900">
-                      {formatDate(selectedRequest.fecha_completada)}
+                      {selectedRequest.es_programada ? 'Programada' : 'Inmediata'}
+                    </span>
+                  </div>
+                )}
+                {selectedRequest.frecuencia && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Frecuencia</span>
+                    <span className="font-medium text-gray-900 capitalize">
+                      {selectedRequest.frecuencia}
                     </span>
                   </div>
                 )}
@@ -293,17 +416,17 @@ export const MyRequests: React.FC = () => {
             </div>
 
             {/* Información Adicional */}
-            {(selectedRequest.observaciones || selectedRequest.numero_turno) && (
+            {(selectedRequest.empresa || selectedRequest.numero_turno || selectedRequest.cumple_requisitos !== null) && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                   <TruckIcon className="h-5 w-5 mr-2" />
                   Información Adicional
                 </h4>
                 <div className="space-y-2">
-                  {selectedRequest.observaciones && (
+                  {selectedRequest.empresa && (
                     <div>
-                      <p className="text-sm text-gray-500">Observaciones</p>
-                      <p className="font-medium text-gray-900">{selectedRequest.observaciones}</p>
+                      <p className="text-sm text-gray-500">Empresa Recolectora</p>
+                      <p className="font-medium text-gray-900">{getEmpresaNombre(selectedRequest.empresa)}</p>
                     </div>
                   )}
                   {selectedRequest.numero_turno && (
@@ -312,10 +435,18 @@ export const MyRequests: React.FC = () => {
                       <p className="font-medium text-gray-900">#{selectedRequest.numero_turno}</p>
                     </div>
                   )}
-                  {selectedRequest.empresa && (
+                  {selectedRequest.cumple_requisitos !== null && (
                     <div>
-                      <p className="text-sm text-gray-500">Empresa Recolectora</p>
-                      <p className="font-medium text-gray-900">{selectedRequest.empresa}</p>
+                      <p className="text-sm text-gray-500">Cumple Requisitos</p>
+                      <p className={`font-medium ${selectedRequest.cumple_requisitos ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedRequest.cumple_requisitos ? 'Sí' : 'No'}
+                      </p>
+                    </div>
+                  )}
+                  {selectedRequest.notificacion_enviada && (
+                    <div>
+                      <p className="text-sm text-gray-500">Notificación</p>
+                      <p className="font-medium text-green-600">Enviada</p>
                     </div>
                   )}
                 </div>
